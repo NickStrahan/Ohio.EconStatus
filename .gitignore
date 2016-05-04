@@ -1,0 +1,67 @@
+#Pulling shapefile for all US counties using _tigris_ package. 
+
+library(tigris)
+
+counties = counties("Ohio")
+school.districts = school_districts("Ohio")
+
+
+#Subsetting newly created spatial data frame to **Appalachian** (Ohio) counties only
+app.counties = subset(counties, NAME == "Athens" | NAME == "Ashtabula" | NAME == "Belmont" | NAME == "Carroll" | NAME == "Columbiana" | NAME == "Coshocton" | NAME == "Guernsey" | NAME == "Harrison" | NAME == "Holmes" | NAME == "Jefferson" | NAME == "Mahoning" | NAME == "Muskingum" | NAME == "Trumbull" | NAME == "Tuscarawas" | NAME == "Hocking" | NAME == "Meigs" | NAME == "Monroe" | NAME == "Morgan" | NAME == "Noble" | NAME == "Perry" | NAME == "Washington" | NAME == "Adams" | NAME == "Brown" | NAME == "Clermont" | NAME == "Gallia" |  NAME == "Highland" | NAME == "Jackson" | NAME == "Lawrence" | NAME == "Pike" | NAME == "Ross" | NAME == "Scioto" | NAME == "Vinton")
+
+#Load tabular data with Ohio Appalachian counties and their **economic status** (distressed, at-risk, transitional, etc)
+load("~/Desktop/R/ohio.econ.status.Rdata")
+  
+
+#fix tabular data to match our spatial data for merge.
+###Rename column "subregion" in _ohio.econ.status_ to "NAME" to match 
+colnames(ohio.econ.status)[1] <- "NAME"
+
+###Changes first letter of string to capital.
+ohio.econ.status$NAME = gsub("(?<=\\b)([a-z])", "\\U\\1", tolower(ohio.econ.status$NAME), perl=TRUE)
+
+
+#Remove columns that are not needed
+my.vars = c("NAME", "fips", "statename", "econ.status", "year")
+ohio.econ.status = ohio.econ.status[my.vars]
+
+
+###subsets to work with
+econ2005 = subset(ohio.econ.status, year == 2005)
+econ2010 = subset(ohio.econ.status, year == 2010)
+
+#Merge
+econ.merge = geo_join(app.counties, econ2005, "NAME", "NAME") 
+
+#building map
+library(leaflet)
+econ2005$econ.status <- as.factor(econ2005$econ.status)
+pal <- colorFactor(topo.colors(5), econ.merge$econ.status)
+
+###fix so colors correspond correctly with econ. status
+pal = colorFactor(palette = c("firebrick", "orangered", "navajowhite2", "cadetblue1", "dodgerblue4"), domain = c("distressed", "at-risk", "transitional", "competitive", "attainment"), na.color = "#7f7f7f")
+
+```
+
+This is the working map as I want it...build from this.
+
+library(leaflet)
+
+ leaflet(econ2010) %>%
+   addTiles() %>%
+   setView(-81.84702, 39.33928, zoom=6) %>%
+   addPolygons(data = econ.merge, color = "#666666", weight = 1, opacity = 1, fillOpacity = .7, fillColor = ~pal(econ.status), popup = econ.merge$NAME) %>%
+   addLegend(pal = pal, values = ~econ.status, title = "Economic Status", opacity = 1)
+
+
+econ2010$econ.status <- as.factor(econ2010$econ.status)
+
+pal = colorFactor(palette = c("dodgerblue4", "cadetblue1", "navajowhite2", "orangered", "firebrick"), domain = econ2010$econ.status, na.color = "#7f7f7f", ordered = TRUE)
+ 
+
+
+ 
+ 
+ 
+ 
+ ```
